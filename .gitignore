@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Node/npm (if ever used)
+node_modules/
+
+# Python (if ever used)
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Other
+*.swp
+*.swo
