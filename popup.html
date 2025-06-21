@@ -1,51 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TimeTwister</title>
     <link rel="stylesheet" href="common.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script src="common.js"></script>
   </head>
   <body class="popup">
-    <h3>TimeTwister</h3>
-
-    <!-- Option 1: Toggle Switch (Most Professional) -->
-    <div class="block-label">
-      Enable for this site
-      <label class="toggle-switch">
-        <input type="checkbox" id="enableToggle" />
-        <span class="toggle-slider"></span>
-      </label>
+    <div class="app-header">
+      <h1>TimeTwister</h1>
     </div>
 
-    <!-- Option 2: Better Aligned Standard Checkbox -->
-    <!--
-    <div class="checkbox-wrapper">
-      <input type="checkbox" id="enableToggle" />
-      <label for="enableToggle">Enable for this site</label>
-    </div>
-    -->
-
-    <!-- Option 3: Custom Styled Checkbox -->
-    <!--
-    <label class="custom-checkbox">
-      <input type="checkbox" id="enableToggle" />
-      <span class="checkmark"></span>
-      Enable for this site
-    </label>
-    -->
-
-    <div class="block-label">
-      Current Timezone:
-      <span id="currentTimezoneDisplay" class="current-timezone-display"></span>
+    <div class="card">
+      <div class="toggle-row">
+        <span class="toggle-label">Enable for this site</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="enableToggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
     </div>
 
-    <div id="timezonePickerContainer"></div>
-
-    <div class="flex-row-end">
-      <button id="saveBtn" class="flex-1">Save</button>
-      <button id="settingsBtn" title="Settings" class="flex-1">Settings</button>
+    <div class="card">
+      <div class="form-group">
+        <label class="section-label">Current Timezone</label>
+        <div class="timezone-display">
+          <div id="currentTimezoneDisplay" class="timezone-value">Not Set</div>
+        </div>
+      </div>
     </div>
-    <div id="settingsView" class="d-none mt-10"></div>
+
+    <div class="card">
+      <div class="timezone-section">
+        <label class="section-label">Select Timezone</label>
+        <div id="timezonePickerContainer"></div>
+      </div>
+    </div>
+
+    <div class="button-container">
+      <button id="saveBtn" class="btn btn-primary">
+        <span>Save Changes</span>
+      </button>
+      <button id="settingsBtn" class="btn btn-secondary" title="Open Settings">
+        <span>Settings</span>
+      </button>
+    </div>
   </body>
 </html>

@@ -1,38 +1,86 @@
 # TimeTwister Chrome Extension
 
-TimeTwister is a simple but powerful browser extension that lets you change the timezone of your browser on a per-site basis.
+> **Professional timezone override for websites** - Modern, accurate, and stylish timezone management for 2025
 
-## Features
+TimeTwister is a sophisticated browser extension that provides per-site timezone control with a beautiful, modern interface designed for 2025.
 
-- **Per-site timezone settings:** Assign a unique timezone to any website.
-- **Dynamic timezone detection:** Automatically apply timezones based on rules.
-- **Favorite timezones:** Quickly access your most-used timezones.
-- **Easy-to-use interface:** A clean and intuitive UI for managing your settings.
+## ✨ Features
 
-## Getting Started
+- **🎯 Per-site timezone settings:** Assign unique timezones to any website with precision
+- **⚡ Real-time application:** Changes apply instantly without page refresh
+- **⭐ Favorite timezones:** Quick access to your most-used timezones
+- **🎨 Modern UI:** Clean, professional interface following 2025 design trends
+- **🌙 Dark mode ready:** Automatic dark mode support based on system preferences
+- **♿ Accessible:** Full keyboard navigation and screen reader support
+- **🔄 Sync across devices:** Settings automatically sync via Chrome sync
 
-1.  **Installation:**
-    -   Clone this repository or download the source code.
-    -   Open Chrome and navigate to `chrome://extensions`.
-    -   Enable "Developer mode".
-    -   Click "Load unpacked" and select the extension's directory.
+## 🚀 Getting Started
 
-2.  **Usage:**
-    -   Click the TimeTwister icon in your browser's toolbar.
-    -   Select a timezone from the list to apply it to the current site.
-    -   The selected timezone will be automatically applied whenever you visit that site.
-    -   Use the options page to manage all your site-specific timezones and favorites.
+### Installation
 
-## How It Works
+1. **Clone or download** this repository
+2. Open Chrome and navigate to `chrome://extensions`
+3. Enable **"Developer mode"** in the top right
+4. Click **"Load unpacked"** and select the extension directory
+5. The TimeTwister icon will appear in your toolbar
 
-The extension uses the `chrome.debugger` API to override the browser's timezone for specific tabs. When you set a timezone for a site, TimeTwister remembers your choice and applies it every time you visit a page on that domain.
+### Usage
 
-The settings are synced across your devices using `chrome.storage.sync`.
+1. **Click the TimeTwister icon** in your browser toolbar
+2. **Toggle "Enable for this site"** to activate timezone override
+3. **Select a timezone** from the beautiful dropdown list
+4. **Click "Save Changes"** to apply immediately
+5. **Visit the Settings page** to manage all your site configurations
 
-## Contributing
+## 🎨 2025 Design Features
 
-Contributions are welcome! If you have ideas for new features or improvements, feel free to open an issue or submit a pull request.
+- **Modern color palette** with subtle gradients
+- **Smooth animations** and micro-interactions
+- **Professional typography** with Inter font family
+- **Accessible focus states** and high contrast support
+- **Responsive hover effects** with modern transforms
+- **Clean card-based layout** with proper shadows
+- **Enhanced visual feedback** for all interactions
 
-## License
+## 🔧 How It Works
+
+TimeTwister uses Chrome's `debugger` API to override the browser's timezone for specific tabs. When you configure a timezone for a site:
+
+1. The extension attaches to the tab's debugging context
+2. It applies the timezone override using `Emulation.setTimezoneOverride`
+3. Your settings are saved and synced across devices
+4. The timezone is automatically reapplied on future visits
+
+## 📁 Project Structure
+
+```
+timetwister/
+├── manifest.json          # Extension configuration
+├── background.js          # Service worker with enhanced error handling
+├── popup.html            # Modern popup interface
+├── options.html          # Professional settings page
+├── common.css            # 2025-ready styling system
+├── common.js             # Enhanced JavaScript with modern patterns
+├── icons/                # Extension icons
+└── README.md            # This file
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's:
+
+- 🐛 Bug fixes
+- ✨ New features
+- 🎨 UI improvements
+- 📚 Documentation updates
+- 🧪 Tests
+
+Please feel free to open an issue or submit a pull request.
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Built with ❤️ for 2025** - Professional timezone management made beautiful and accessible.

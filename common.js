@@ -123,6 +123,8 @@ class TimezoneState {
   }
 }
 
+const timezoneState = new TimezoneState();
+
 // ^ COMPONENT BUILDERS ---------------------------------------------------------------
 
 class ComponentBuilder {
@@ -343,115 +345,118 @@ class TimezonePicker {
 
 class PopupHandler {
   constructor() {
-    this.state = new TimezoneState();
+    this.state = timezoneState;
+    this.tab = null;
     this.siteTimezone = null;
+    this.elements = {};
+
+    this.initialize();
   }
 
   async initialize() {
-    this.state = new TimezoneState();
     this.loadElements();
+    await this.state.loadFavorites(); // Make sure popup also loads the favorites
     await this.loadInitialData();
     this.setupEventListeners();
     this.setupTimezonePicker();
   }
 
   loadElements() {
-    this.currentTimezoneDisplay = document.getElementById(
-      'currentTimezoneDisplay'
-    );
-    this.enableToggle = document.getElementById('enableToggle');
-    this.saveBtn = document.getElementById('saveBtn');
-    this.settingsBtn = document.getElementById('settingsBtn');
-    this.timezonePickerContainer = document.getElementById(
-      'timezonePickerContainer'
-    );
+    this.elements.currentTimezoneDisplay = document.getElementById('currentTimezoneDisplay');
+    this.elements.enableToggle = document.getElementById('enableToggle');
+    this.elements.saveBtn = document.getElementById('saveBtn');
+    this.elements.settingsBtn = document.getElementById('settingsBtn');
+    this.elements.timezonePickerContainer = document.getElementById('timezonePickerContainer');
+    this.elements.settingsView = document.getElementById('settingsView');
   }
 
   async loadInitialData() {
-    const tab = await TabUtils.getCurrentTab();
-    this.tabUrl = tab.url;
-    this.tabId = tab.id;
+    this.tab = await TabUtils.getCurrentTab();
+    if (!this.tab) return;
 
-    await this.state.loadFavorites();
+    this.siteTimezone = await Storage.get(this.tab.url);
 
-    const siteTimezone = await Storage.get(this.tabUrl);
-    if (siteTimezone) {
-      this.state.setSelectedTimezone(siteTimezone);
-      this.enableToggle.checked = true;
+    if (this.siteTimezone) {
+      this.state.setSelectedTimezone(this.siteTimezone);
+      this.elements.enableToggle.checked = true;
     } else {
-      this.state.setSelectedTimezone('UTC'); // Default to UTC if not set
-      this.enableToggle.checked = false;
+      this.state.setSelectedTimezone('UTC');
+      this.elements.enableToggle.checked = false;
     }
     this.updateCurrentTimezoneDisplay();
   }
 
   async updateCurrentTimezoneDisplay() {
-    const siteTimezone = await Storage.get(this.tabUrl);
-    this.currentTimezoneDisplay.textContent = siteTimezone || 'Not Set';
+    this.elements.currentTimezoneDisplay.textContent = this.siteTimezone || 'Not Set';
   }
 
   setupEventListeners() {
-    this.enableToggle.addEventListener('change', async () => {
-      if (!this.enableToggle.checked) {
-        const tab = await TabUtils.getCurrentTab();
-        await Storage.remove(tab.url);
-        await TabUtils.applyTimezoneToTab(tab.id, null);
-        TabUtils.reloadTab(tab.id);
+    this.elements.enableToggle.addEventListener('change', async () => {
+      if (!this.elements.enableToggle.checked) {
+        await Storage.remove(this.tab.url);
+        await TabUtils.applyTimezoneToTab(this.tab.id, null);
+        TabUtils.reloadTab(this.tab.id);
         this.siteTimezone = null;
         this.updateCurrentTimezoneDisplay();
       }
     });
 
-    this.saveBtn.addEventListener('click', async () => {
-      const tab = await TabUtils.getCurrentTab();
-
-      if (this.enableToggle.checked) {
-        await Storage.set(tab.url, this.state.selectedTimezone);
-        await TabUtils.applyTimezoneToTab(tab.id, this.state.selectedTimezone);
-        TabUtils.reloadTab(tab.id);
+    this.elements.saveBtn.addEventListener('click', async () => {
+      if (this.elements.enableToggle.checked) {
+        await Storage.set(this.tab.url, this.state.selectedTimezone);
+        await TabUtils.applyTimezoneToTab(
+          this.tab.id,
+          this.state.selectedTimezone
+        );
+        TabUtils.reloadTab(this.tab.id);
       }
-
       window.close();
     });
 
-    this.settingsBtn.addEventListener('click', () => {
+    this.elements.settingsBtn.addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
     });
   }
 
   setupTimezonePicker() {
-    this.picker = new TimezonePicker(this.timezonePickerContainer, this.state, {
-      showOffset: true,
-      emptyMessage: 'No timezones found.'
-    });
+    this.picker = new TimezonePicker(
+      this.elements.timezonePickerContainer,
+      this.state,
+      {
+        showOffset: true,
+        emptyMessage: 'No timezones found.',
+        onSelect: (timezone) => {
+          this.state.setSelectedTimezone(timezone);
+          this.elements.currentTimezoneDisplay.textContent = timezone;
+          this.siteTimezone = timezone;
+        }
+      }
+    );
   }
 }
 
 class OptionsHandler {
   constructor() {
-    this.state = null;
-    this.sitesList = null;
-    this.timezonePicker = null;
-    this.sitesSearchContainer = null;
+    this.state = timezoneState;
+    this.elements = {};
+    this.sites = {};
+    this.initialize();
   }
 
   async initialize() {
-    this.state = new TimezoneState();
+    await this.state.loadFavorites();
     this.loadElements();
-    await this.loadInitialData();
     this.setupComponents();
+    this.loadInitialData();
   }
 
   loadElements() {
-    this.sitesList = document.getElementById('sitesList');
-    this.sitesSearchContainer = document.getElementById('sitesSearchContainer');
-    this.timezonePickerContainer = document.getElementById(
-      'timezonePickerContainer'
-    );
+    this.elements.timezonePickerContainer = document.getElementById('timezonePickerContainer');
+    this.elements.sitesSearchContainer = document.getElementById('sitesSearchContainer');
+    this.elements.sitesList = document.getElementById('sitesList');
   }
 
   async loadInitialData() {
-    await this.state.loadFavorites();
     this.renderSites();
   }
 
@@ -462,110 +467,115 @@ class OptionsHandler {
 
   setupSitesSearch() {
     const searchBar = ComponentBuilder.createSearchBar(
-      'Search sites...',
+      'Search for a site...',
       (filter) => this.renderSites(filter)
     );
-    this.sitesSearchContainer.appendChild(searchBar);
+    this.elements.sitesSearchContainer.appendChild(searchBar);
   }
 
   setupFavoritesPicker() {
     this.timezonePicker = new TimezonePicker(
-      this.timezonePickerContainer,
+      this.elements.timezonePickerContainer,
       this.state,
       {
-        showFavorites: true
+        showOffset: true,
+        emptyMessage: 'No favorite timezones selected.',
+        onSelect: null,
       }
     );
   }
 
   async renderSites(filter = '') {
-    this.sitesList.innerHTML = '';
+    this.elements.sitesList.innerHTML = '';
     const allData = await Storage.getAll();
-    let siteKeys = Object.keys(allData).filter(k => k.startsWith('http'));
+    this.sites = {};
+    Object.keys(allData).forEach((key) => {
+      if (key.startsWith('http')) {
+        this.sites[key] = allData[key];
+      }
+    });
+
+    let siteKeys = Object.keys(this.sites);
 
     if (filter) {
-      const lowerCaseFilter = filter.toLowerCase();
-      siteKeys = siteKeys.filter(site =>
-        site.toLowerCase().includes(lowerCaseFilter)
+      siteKeys = siteKeys.filter((site) =>
+        site.toLowerCase().includes(filter.toLowerCase())
       );
     }
 
     if (siteKeys.length === 0) {
-      this.sitesList.innerHTML = '<div class="empty-list-message">No sites set.</div>';
+      this.elements.sitesList.innerHTML =
+        '<div class="empty-list-message">No sites set.</div>';
       return;
     }
 
     for (const site of siteKeys) {
-      const row = this.createSiteRow(site, allData[site]);
-      this.sitesList.appendChild(row);
+      const row = this.createSiteRow(site, this.sites[site]);
+      this.elements.sitesList.appendChild(row);
     }
   }
 
   createSiteRow(site, timezone) {
     const row = document.createElement('div');
-    row.className = 'list-row';
+    row.className = 'list-row site-row';
 
     const mainContent = document.createElement('div');
     mainContent.className = 'list-row-main';
 
-    const urlSpan = document.createElement('span');
-    urlSpan.textContent = site;
-    urlSpan.style.flex = '1';
-    urlSpan.style.whiteSpace = 'nowrap';
-    urlSpan.style.overflow = 'hidden';
-    urlSpan.style.textOverflow = 'ellipsis';
+    const siteInfo = document.createElement('div');
+    siteInfo.className = 'site-info';
+    const siteLabel = document.createElement('span');
+    siteLabel.className = 'site-url';
+    siteLabel.textContent = site;
+    const timezoneLabel = document.createElement('span');
+    timezoneLabel.className = 'site-timezone';
+    timezoneLabel.textContent = timezone;
+    siteInfo.appendChild(siteLabel);
+    siteInfo.appendChild(timezoneLabel);
 
-    const timezoneSelect = ComponentBuilder.createTimezoneSelect(timezone);
-    const offsetSpan = document.createElement('span');
-    offsetSpan.className = 'list-row-offset';
-    offsetSpan.textContent = getUtcOffsetString(timezone);
+    mainContent.appendChild(siteInfo);
 
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'clear-btn list-row-action';
-    removeBtn.title = 'Remove site';
-    removeBtn.textContent = '×';
+    const actions = document.createElement('div');
+    actions.className = 'site-actions';
 
-    // Events
-    timezoneSelect.addEventListener('change', async () => {
-      const newTimezone = timezoneSelect.value;
-      offsetSpan.textContent = getUtcOffsetString(newTimezone);
-      await Storage.set(site, newTimezone);
-
-      chrome.tabs.query({ url: `${site}/*` }, async (tabs) => {
-        for (const tab of tabs) {
-          await TabUtils.applyTimezoneToTab(tab.id, newTimezone);
-        }
-      });
+    const timezoneSelect = ComponentBuilder.createTimezoneSelect(timezone, {
+      className: 'timezone-select-small',
+      includeNotSet: true,
     });
 
+    timezoneSelect.addEventListener('change', async (event) => {
+      const newTimezone = event.target.value;
+      if (newTimezone) {
+        await Storage.set(site, newTimezone);
+      } else {
+        await Storage.remove(site);
+      }
+      this.renderSites(); // Re-render to reflect changes
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-icon';
+    removeBtn.innerHTML = '&times;'; // A simple 'x' for remove
+    removeBtn.title = 'Remove site setting';
     removeBtn.addEventListener('click', async () => {
       await Storage.remove(site);
       this.renderSites();
     });
 
-    mainContent.appendChild(urlSpan);
-    mainContent.appendChild(timezoneSelect);
+    actions.appendChild(timezoneSelect);
+    actions.appendChild(removeBtn);
+    mainContent.appendChild(actions);
     row.appendChild(mainContent);
-    row.appendChild(offsetSpan);
-    row.appendChild(removeBtn);
-
     return row;
   }
 }
 
-// ^ INITIALIZATION -------------------------------------------------------------------
+// ^ INITIALIZATION --------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
-  const pageHandlers = {
-    popup: PopupHandler,
-    options: OptionsHandler
-  };
-
-  const pageType = document.body.classList.contains('popup') ? 'popup' : 'options';
-  const HandlerClass = pageHandlers[pageType];
-
-  if (HandlerClass) {
-    const handler = new HandlerClass();
-    handler.initialize().catch(console.error);
+  if (document.body.classList.contains('popup')) {
+    new PopupHandler();
+  } else if (document.body.classList.contains('options')) {
+    new OptionsHandler();
   }
 });
