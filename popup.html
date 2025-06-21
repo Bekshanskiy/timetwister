@@ -1,59 +1,51 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>TimeTwister</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      min-width: 320px;
-      max-width: 320px;
-      width: 320px;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-    select, button { width: 100%; margin-top: 10px; }
-    .search-wrapper {
-      display: flex;
-      align-items: center;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      margin-bottom: 6px;
-    }
-    .search-input {
-      flex-grow: 1;
-      border: none;
-      outline: none;
-      padding: 8px;
-      background: transparent;
-      font-size: 14px;
-    }
-    .clear-btn {
-      padding: 0 8px;
-      cursor: pointer;
-      display: none;
-      font-size: 20px;
-      color: #999;
-    }
-  </style>
-</head>
-<body>
-  <h3>TimeTwister</h3>
-  <label style="margin-bottom: 10px; display: block;">
-    <input type="checkbox" id="enableToggle"> Enable for this site
-  </label>
-  <div style="height: 8px;"></div>
-  <label for="timezoneDropdown">Timezone: <span id="currentTimezoneDisplay" style="color: #0074d9; font-size: 15px; cursor: pointer;"></span></label>
-  <div class="search-wrapper" style="margin-bottom: 6px;">
-    <input type="text" id="popupTimezoneSearch" class="search-input" placeholder="Search timezones...">
-    <span id="popupClearSearchBtn" class="clear-btn">&times;</span>
-  </div>
-  <div id="timezoneDropdown" style="border: 1px solid #ccc; border-radius: 4px; max-height: 200px; overflow-y: auto; margin-top: 8px;"></div>
-  <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px;">
-    <button id="saveBtn" style="flex:1;">Save</button>
-    <button id="settingsBtn" title="Settings" style="flex:1;">Settings</button>
-  </div>
-  <div id="settingsView" style="display:none; margin-top: 10px;"></div>
-  <script src="popup.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>TimeTwister</title>
+    <link rel="stylesheet" href="common.css" />
+    <script src="common.js"></script>
+  </head>
+  <body class="popup">
+    <h3>TimeTwister</h3>
+
+    <!-- Option 1: Toggle Switch (Most Professional) -->
+    <div class="block-label">
+      Enable for this site
+      <label class="toggle-switch">
+        <input type="checkbox" id="enableToggle" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <!-- Option 2: Better Aligned Standard Checkbox -->
+    <!--
+    <div class="checkbox-wrapper">
+      <input type="checkbox" id="enableToggle" />
+      <label for="enableToggle">Enable for this site</label>
+    </div>
+    -->
+
+    <!-- Option 3: Custom Styled Checkbox -->
+    <!--
+    <label class="custom-checkbox">
+      <input type="checkbox" id="enableToggle" />
+      <span class="checkmark"></span>
+      Enable for this site
+    </label>
+    -->
+
+    <div class="block-label">
+      Current Timezone:
+      <span id="currentTimezoneDisplay" class="current-timezone-display"></span>
+    </div>
+
+    <div id="timezonePickerContainer"></div>
+
+    <div class="flex-row-end">
+      <button id="saveBtn" class="flex-1">Save</button>
+      <button id="settingsBtn" title="Settings" class="flex-1">Settings</button>
+    </div>
+    <div id="settingsView" class="d-none mt-10"></div>
+  </body>
 </html>
