@@ -16,6 +16,23 @@
       </header>
 
       <main class="options-content">
+        <!-- General Settings Section -->
+        <div class="card">
+            <div class="section-header">
+              <h2>General Settings</h2>
+            </div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>Time Format</label>
+                    <p class="setting-description">Choose how time is displayed in the popup.</p>
+                </div>
+                <div id="timeFormatToggle" class="segmented-control">
+                    <button data-value="12">12-hour</button>
+                    <button data-value="24">24-hour</button>
+                </div>
+            </div>
+          </div>
+
         <!-- Site Overrides Section -->
         <div class="card">
           <div class="section-header">
@@ -30,6 +47,9 @@
           </div>
         </div>
       </main>
+      <footer id="optionsFooter" class="options-footer">
+        <!-- Version number will be inserted here -->
+      </footer>
     </div>
   </body>
 </html>

@@ -88,6 +88,7 @@ class TimezoneState {
     this.allTimezones = Intl.supportedValuesOf('timeZone');
     this.favoriteTimezones = [];
     this.selectedTimezone = null;
+    this.timeFormat = '12'; // Default to 12-hour
     this.listeners = new Set();
   }
 
@@ -100,9 +101,16 @@ class TimezoneState {
     this.listeners.forEach(listener => listener(this));
   }
 
-  async loadFavorites() {
+  async loadSettings() {
     this.favoriteTimezones = await Storage.get('favoriteTimezones', []);
+    this.timeFormat = await Storage.get('timeFormat', '12');
     this.notify();
+  }
+
+  async setTimeFormat(format) {
+      this.timeFormat = format;
+      await Storage.set('timeFormat', format);
+      this.notify();
   }
 
   async toggleFavorite(timezone) {
@@ -168,29 +176,42 @@ class ComponentBuilder {
 
     row.addEventListener('click', () => onSelect(timezone));
 
-    const main = document.createElement('span');
+    const main = document.createElement('div');
     main.className = 'list-row-main';
-    main.textContent = timezone;
+
+    const title = document.createElement('span');
+    title.className = 'list-row-title';
+
+    const subtitle = document.createElement('span');
+    subtitle.className = 'list-row-subtitle';
+
+    const parts = timezone.split('/');
+    const mainPart = parts.length > 1 ? parts.slice(1).join('/') : parts[0];
+    const regionPart = parts.length > 1 ? parts[0] : '';
+
+    title.textContent = mainPart.replace(/_/g, ' ');
+    subtitle.textContent = `${regionPart.replace(/_/g, ' ')}${showOffset ? ` • ${getUtcOffsetString(timezone)}` : ''}`;
+
+    main.appendChild(title);
+    main.appendChild(subtitle);
     row.appendChild(main);
 
-    if (showOffset) {
-      const offset = document.createElement('span');
-      offset.className = 'list-row-offset';
-      offset.textContent = getUtcOffsetString(timezone);
-      row.appendChild(offset);
+    if (onToggleFavorite) {
+        const actions = document.createElement('div');
+        actions.className = 'list-row-actions';
+
+        const star = document.createElement('span');
+        star.className = `star list-row-action ${isFavorite ? 'fav' : 'notfav'}`;
+        star.innerHTML = isFavorite ? '★' : '☆';
+        star.title = isFavorite ? 'Remove from favorites' : 'Add to favorites';
+        star.onclick = (e) => {
+            e.stopPropagation();
+            onToggleFavorite(timezone);
+        };
+        actions.appendChild(star);
+        row.appendChild(actions);
     }
 
-    if (onToggleFavorite) {
-      const star = document.createElement('span');
-      star.className = `star list-row-action ${isFavorite ? 'fav' : 'notfav'}`;
-      star.innerHTML = isFavorite ? '★' : '☆';
-      star.title = isFavorite ? 'Remove from favorites' : 'Add to favorites';
-      star.onclick = (e) => {
-        e.stopPropagation();
-        onToggleFavorite(timezone);
-      };
-      row.appendChild(star);
-    }
 
     return row;
   }
@@ -343,7 +364,7 @@ class PopupHandler {
 
   async initialize() {
     this.loadElements();
-    await this.state.loadFavorites();
+    await this.state.loadSettings();
     await this.loadInitialData();
     this.setupEventListeners();
     this.setupTimezonePicker();
@@ -399,6 +420,7 @@ class PopupHandler {
     }
 
     const timezoneToDisplay = this.siteTimezone || this.localTimezone;
+    const hour12 = this.state.timeFormat === '12';
 
     const update = () => {
       try {
@@ -407,7 +429,7 @@ class PopupHandler {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            hour12: true
+            hour12: hour12
         });
       } catch(e) {
         this.elements.currentTime.textContent = 'Invalid Timezone';
@@ -440,6 +462,8 @@ class PopupHandler {
     this.elements.settingsBtn.addEventListener('click', () => {
       chrome.runtime.openOptionsPage();
     });
+
+    this.state.subscribe(() => this.updateClock());
   }
 
   setupTimezonePicker() {
@@ -474,15 +498,49 @@ class OptionsHandler {
 
   async initialize() {
     this.loadElements();
+    await this.state.loadSettings();
+    this.setupEventListeners();
     this.setupComponents();
-    // Use a listener on storage changes to re-render automatically
-    chrome.storage.onChanged.addListener(() => this.renderSites());
+
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+        if(namespace === 'sync') {
+            if(changes.timeFormat) {
+                this.state.timeFormat = changes.timeFormat.newValue;
+            }
+            this.renderSites();
+        }
+    });
     this.renderSites();
+    this.renderSettings();
   }
 
   loadElements() {
     this.elements.sitesSearchContainer = document.getElementById('sitesSearchContainer');
     this.elements.sitesList = document.getElementById('sitesList');
+    this.elements.timeFormatToggle = document.getElementById('timeFormatToggle');
+    this.elements.footer = document.getElementById('optionsFooter');
+  }
+
+  renderSettings() {
+      // Update the active button in the segmented control
+      const buttons = this.elements.timeFormatToggle.querySelectorAll('button');
+      buttons.forEach(button => {
+          button.classList.toggle('active', button.dataset.value === this.state.timeFormat);
+      });
+
+      const manifest = chrome.runtime.getManifest();
+      this.elements.footer.textContent = `TimeTwister v${manifest.version}`;
+  }
+
+  setupEventListeners() {
+      this.elements.timeFormatToggle.addEventListener('click', (e) => {
+          const button = e.target.closest('button');
+          if (button) {
+              const newFormat = button.dataset.value;
+              this.state.setTimeFormat(newFormat);
+              this.renderSettings(); // Re-render to update the active class
+          }
+      });
   }
 
   setupComponents() {
@@ -498,7 +556,6 @@ class OptionsHandler {
     const allData = await Storage.getAll();
     this.sites = {};
     Object.keys(allData).forEach((key) => {
-      // Simple check to filter only for site override settings
       if (key.startsWith('http')) {
         this.sites[key] = allData[key];
       }
@@ -514,8 +571,14 @@ class OptionsHandler {
     }
 
     if (siteKeys.length === 0) {
-      this.elements.sitesList.innerHTML =
-        '<div class="empty-list-message">No sites configured.</div>';
+      this.elements.sitesList.innerHTML = `
+        <div class="empty-list-message">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.953 11.953 0 0112 13.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0021 12c0-3.866-2.59-7-6-7" />
+            </svg>
+            <h3>No sites configured</h3>
+            <p>Use the popup to set a timezone for any website.</p>
+        </div>`;
       return;
     }
 
@@ -532,6 +595,14 @@ class OptionsHandler {
     const mainContent = document.createElement('div');
     mainContent.className = 'list-row-main';
 
+    const favicon = document.createElement('img');
+    favicon.className = 'site-favicon';
+    favicon.src = `https://www.google.com/s2/favicons?sz=32&domain_url=${site}`;
+    favicon.onerror = () => { favicon.style.visibility = 'hidden'; }; // Hide if no favicon found
+
+    const siteDetails = document.createElement('div');
+    siteDetails.className = 'site-details';
+
     const siteInfo = document.createElement('div');
     siteInfo.className = 'site-info';
     const siteLabel = document.createElement('span');
@@ -540,8 +611,11 @@ class OptionsHandler {
     const timezoneLabel = document.createElement('span');
     timezoneLabel.className = 'site-timezone';
     timezoneLabel.textContent = timezone;
-    siteInfo.appendChild(siteLabel);
-    siteInfo.appendChild(timezoneLabel);
+    siteDetails.appendChild(siteLabel);
+    siteDetails.appendChild(timezoneLabel);
+
+    siteInfo.appendChild(favicon);
+    siteInfo.appendChild(siteDetails);
 
     mainContent.appendChild(siteInfo);
 
@@ -563,7 +637,7 @@ class OptionsHandler {
     });
 
     actions.appendChild(timezoneSelect);
-    actions.appendChild(removeBtn);
+    actions.appendChild(removeBtn); 
     mainContent.appendChild(actions);
     row.appendChild(mainContent);
     return row;
