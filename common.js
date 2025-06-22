@@ -245,7 +245,7 @@ class TimezoneList {
     this.state = state;
     this.options = {
       showOffset: false,
-      emptyMessage: 'No timezones found.',
+      emptyMessage: 'Nothing found',
       onSelect: null,
       ...options
     };
@@ -424,7 +424,7 @@ class PopupHandler {
       this.state,
       {
         showOffset: true,
-        emptyMessage: 'No timezones found.',
+        emptyMessage: 'Nothing found',
         onSelect: (timezone) => {
           this.state.setSelectedTimezone(timezone);
           this.elements.currentTimezoneDisplay.textContent = timezone;
@@ -451,7 +451,6 @@ class OptionsHandler {
   }
 
   loadElements() {
-    this.elements.timezonePickerContainer = document.getElementById('timezonePickerContainer');
     this.elements.sitesSearchContainer = document.getElementById('sitesSearchContainer');
     this.elements.sitesList = document.getElementById('sitesList');
   }
@@ -462,7 +461,6 @@ class OptionsHandler {
 
   setupComponents() {
     this.setupSitesSearch();
-    this.setupFavoritesPicker();
   }
 
   setupSitesSearch() {
@@ -471,18 +469,6 @@ class OptionsHandler {
       (filter) => this.renderSites(filter)
     );
     this.elements.sitesSearchContainer.appendChild(searchBar);
-  }
-
-  setupFavoritesPicker() {
-    this.timezonePicker = new TimezonePicker(
-      this.elements.timezonePickerContainer,
-      this.state,
-      {
-        showOffset: true,
-        emptyMessage: 'No favorite timezones selected.',
-        onSelect: null,
-      }
-    );
   }
 
   async renderSites(filter = '') {
@@ -505,7 +491,7 @@ class OptionsHandler {
 
     if (siteKeys.length === 0) {
       this.elements.sitesList.innerHTML =
-        '<div class="empty-list-message">No sites set.</div>';
+        '<div class="empty-list-message">Nothing found</div>';
       return;
     }
 
