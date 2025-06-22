@@ -5,48 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TimeTwister</title>
     <link rel="stylesheet" href="common.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <script src="common.js"></script>
   </head>
   <body class="popup">
-    <div class="app-header">
+    <!-- Header: Clean and simple, with a title and a link to the options page. -->
+    <div class="popup-header">
       <h1>TimeTwister</h1>
-    </div>
-
-    <div class="card">
-      <div class="toggle-row">
-        <span class="toggle-label">Enable for this site</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="enableToggle" />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="form-group">
-        <label class="section-label">Current Timezone</label>
-        <div class="timezone-display">
-          <div id="currentTimezoneDisplay" class="timezone-value">Loading...</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="timezone-section">
-        <label class="section-label">Select Timezone</label>
-        <div id="timezonePickerContainer"></div>
-      </div>
-    </div>
-
-    <div class="button-container">
-      <button id="saveBtn" class="btn btn-primary">
-        <span>Save Changes</span>
+      <button id="settingsBtn" class="btn-icon" title="Open Settings">
+        <!-- SVG for settings icon -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          fill="currentColor"
+          viewBox="0 0 16 16"
+        >
+          <path
+            d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"
+          />
+        </svg>
       </button>
-      <button id="settingsBtn" class="btn btn-secondary" title="Open Settings">
-        <span>Settings</span>
-      </button>
+    </div>
+
+    <!-- Main Content: A more streamlined and intuitive interface. -->
+    <div class="popup-content">
+      <!-- Status Section: Clearly shows if the extension is active for the site. -->
+      <div class="status-section">
+        <div class="status-indicator"></div>
+        <div id="statusText">Timezone override is inactive</div>
+        <div id="currentTime" class="current-time"></div>
+      </div>
+
+      <!-- Current Timezone Display: More prominent and acts as a button to change the setting. -->
+      <div id="currentTimezoneDisplay" class="current-timezone-display" tabindex="0">
+        <span id="currentTimezoneValue">Not Set</span>
+        <span class="edit-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+        </span>
+      </div>
+
+      <!-- Timezone Picker: Hidden by default and appears when the user wants to change the timezone. -->
+      <div id="timezonePickerContainer" class="timezone-picker-container" style="display: none;">
+        <!-- The timezone list will be rendered here by common.js -->
+      </div>
+    </div>
+
+    <!-- Footer: A cleaner footer with a "disable" button that only appears when active. -->
+    <div class="popup-footer">
+        <button id="disableBtn" class="btn btn-danger" style="display: none;">Disable for this site</button>
     </div>
   </body>
 </html>

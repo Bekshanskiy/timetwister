@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TimeTwister",
   "version": "1.1.0",
-  "description": "Professional timezone override for websites - Modern, accurate, and stylish timezone management for 2025",
+  "description": "Timezone override for selected websites",
   "author": "Bekshanskiy",
   "permissions": ["storage", "tabs", "debugger"],
   "host_permissions": ["<all_urls>"],
@@ -11,7 +11,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "TimeTwister - Modern Timezone Control",
+    "default_title": "TimeTwister - Timezone Control for selected websites",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

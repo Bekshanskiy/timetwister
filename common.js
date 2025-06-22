@@ -34,12 +34,14 @@ const TabUtils = {
   async getCurrentTab() {
     return new Promise((resolve) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tab = tabs[0];
-        resolve({
-          url: new URL(tab.url).origin,
-          id: tab.id,
-          fullTab: tab
-        });
+        if (tabs[0] && tabs[0].url.startsWith('http')) {
+            resolve({
+              url: new URL(tabs[0].url).origin,
+              id: tabs[0].id,
+            });
+        } else {
+            resolve(null);
+        }
       });
     });
   },
@@ -64,6 +66,7 @@ function getUtcOffsetString(timezone) {
   try {
     if (!timezone) return '';
     const now = new Date();
+    // Note: The toLocaleString method for getting offset is not perfectly reliable but works for display.
     const tzDateString = now.toLocaleString("en-US", { timeZone: timezone });
     const tzDate = new Date(tzDateString);
     const utcDateString = now.toLocaleString("en-US", { timeZone: "UTC" });
@@ -84,7 +87,7 @@ class TimezoneState {
   constructor() {
     this.allTimezones = Intl.supportedValuesOf('timeZone');
     this.favoriteTimezones = [];
-    this.selectedTimezone = 'UTC';
+    this.selectedTimezone = null;
     this.listeners = new Set();
   }
 
@@ -112,8 +115,8 @@ class TimezoneState {
       favorites.push(timezone);
     }
 
-    this.favoriteTimezones = favorites;
-    await Storage.set('favoriteTimezones', favorites);
+    this.favoriteTimezones = favorites.sort();
+    await Storage.set('favoriteTimezones', this.favoriteTimezones);
     this.notify();
   }
 
@@ -130,37 +133,66 @@ const timezoneState = new TimezoneState();
 class ComponentBuilder {
   static createSearchBar(placeholder, onSearch) {
     const searchWrapper = document.createElement('div');
-    searchWrapper.className = 'search-wrapper mb-6';
+    searchWrapper.className = 'search-wrapper';
+
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'search-icon');
+    icon.setAttribute('viewBox', '0 0 20 20');
+    icon.setAttribute('fill', 'currentColor');
+    icon.innerHTML = `<path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />`;
 
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.className = 'search-input';
     searchInput.placeholder = placeholder || 'Search...';
 
-    const clearBtn = document.createElement('span');
-    clearBtn.className = 'clear-btn';
-    clearBtn.innerHTML = '&times;';
-    clearBtn.style.display = 'none';
+    searchInput.addEventListener('input', () => onSearch?.(searchInput.value));
 
-    const handleInput = () => {
-      const filter = searchInput.value;
-      clearBtn.style.display = filter ? 'block' : 'none';
-      onSearch?.(filter);
-    };
-
-    const handleClear = () => {
-      searchInput.value = '';
-      clearBtn.style.display = 'none';
-      onSearch?.('');
-    };
-
-    searchInput.addEventListener('input', handleInput);
-    clearBtn.addEventListener('click', handleClear);
-
+    searchWrapper.appendChild(icon);
     searchWrapper.appendChild(searchInput);
-    searchWrapper.appendChild(clearBtn);
-
     return searchWrapper;
+  }
+
+  static createTimezoneListRow(timezone, options = {}) {
+    const {
+      isFavorite = false,
+      isSelected = false,
+      showOffset = false,
+      onSelect,
+      onToggleFavorite
+    } = options;
+
+    const row = document.createElement('div');
+    row.className = 'list-row';
+    if(isSelected) row.classList.add('selected');
+
+    row.addEventListener('click', () => onSelect(timezone));
+
+    const main = document.createElement('span');
+    main.className = 'list-row-main';
+    main.textContent = timezone;
+    row.appendChild(main);
+
+    if (showOffset) {
+      const offset = document.createElement('span');
+      offset.className = 'list-row-offset';
+      offset.textContent = getUtcOffsetString(timezone);
+      row.appendChild(offset);
+    }
+
+    if (onToggleFavorite) {
+      const star = document.createElement('span');
+      star.className = `star list-row-action ${isFavorite ? 'fav' : 'notfav'}`;
+      star.innerHTML = isFavorite ? '★' : '☆';
+      star.title = isFavorite ? 'Remove from favorites' : 'Add to favorites';
+      star.onclick = (e) => {
+        e.stopPropagation();
+        onToggleFavorite(timezone);
+      };
+      row.appendChild(star);
+    }
+
+    return row;
   }
 
   static createTimezoneSelect(selectedValue, options = {}) {
@@ -186,54 +218,13 @@ class ComponentBuilder {
     return select;
   }
 
-  static createTimezoneListRow(timezone, options = {}) {
-    const {
-      isFavorite = false,
-      isSelected = false,
-      showOffset = false,
-      onSelect,
-      onToggleFavorite
-    } = options;
-
-    const row = document.createElement('div');
-    row.className = 'list-row';
-
-    if (isSelected) {
-      row.style.background = '#e0e0e0';
-      row.style.fontWeight = 'bold';
-    }
-
-    if (onSelect) {
-      row.addEventListener('click', () => onSelect(timezone));
-    }
-
-    // Label
-    const label = document.createElement('span');
-    label.textContent = timezone;
-    label.style.flex = '1';
-    row.appendChild(label);
-
-    // Offset
-    if (showOffset) {
-      const offset = document.createElement('span');
-      offset.className = 'list-row-offset';
-      offset.textContent = getUtcOffsetString(timezone);
-      row.appendChild(offset);
-    }
-
-    // Star
-    if (onToggleFavorite) {
-      const star = document.createElement('span');
-      star.className = `star list-row-action ${isFavorite ? 'fav' : 'notfav'}`;
-      star.textContent = isFavorite ? '★' : '☆';
-      star.onclick = (e) => {
-        e.stopPropagation();
-        onToggleFavorite(timezone);
-      };
-      row.appendChild(star);
-    }
-
-    return row;
+  static createRemoveBtn(onClick) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn-icon danger';
+      removeBtn.title = 'Remove setting';
+      removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>`;
+      removeBtn.addEventListener('click', onClick);
+      return removeBtn;
   }
 }
 
@@ -261,16 +252,15 @@ class TimezoneList {
   }
 
   getFilteredTimezones() {
-    const lowerCaseFilter = this.filter.toLowerCase().replace(/_/g, ' ');
+    const lowerCaseFilter = this.filter.toLowerCase().replace(/[/_]/g, ' ');
     const filtered = this.state.allTimezones.filter(tz =>
-      tz.toLowerCase().replace(/_/g, ' ').includes(lowerCaseFilter)
+      tz.toLowerCase().replace(/[/_]/g, ' ').includes(lowerCaseFilter)
     );
 
-    // Sort: favorites first, then others
-    return [
-      ...this.state.favoriteTimezones.filter(tz => filtered.includes(tz)),
-      ...filtered.filter(tz => !this.state.favoriteTimezones.includes(tz))
-    ];
+    const favorites = this.state.favoriteTimezones.filter(tz => filtered.includes(tz));
+    const nonFavorites = filtered.filter(tz => !this.state.favoriteTimezones.includes(tz)).sort();
+
+    return [...favorites, ...nonFavorites];
   }
 
   render() {
@@ -306,27 +296,23 @@ class TimezonePicker {
     this.container = container;
     this.state = state;
     this.options = options;
-
     this.render();
   }
 
   render() {
     this.container.innerHTML = '';
 
-    // Search bar
     const searchBar = ComponentBuilder.createSearchBar(
       'Search timezones...',
       (filter) => this.timezoneList.setFilter(filter)
     );
 
-    // List container
     const listContainer = document.createElement('div');
     listContainer.id = 'timezoneDropdown';
 
     this.container.appendChild(searchBar);
     this.container.appendChild(listContainer);
 
-    // Initialize timezone list
     this.timezoneList = new TimezoneList(listContainer, this.state, {
       ...this.options,
       onSelect: (timezone) => {
@@ -348,69 +334,107 @@ class PopupHandler {
     this.state = timezoneState;
     this.tab = null;
     this.siteTimezone = null;
+    this.isPickerVisible = false;
+    this.clockInterval = null;
+    this.localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     this.elements = {};
-
     this.initialize();
   }
 
   async initialize() {
     this.loadElements();
-    await this.state.loadFavorites(); // Make sure popup also loads the favorites
+    await this.state.loadFavorites();
     await this.loadInitialData();
     this.setupEventListeners();
     this.setupTimezonePicker();
+    this.updateUI();
   }
 
   loadElements() {
-    this.elements.currentTimezoneDisplay = document.getElementById('currentTimezoneDisplay');
-    this.elements.enableToggle = document.getElementById('enableToggle');
-    this.elements.saveBtn = document.getElementById('saveBtn');
-    this.elements.settingsBtn = document.getElementById('settingsBtn');
-    this.elements.timezonePickerContainer = document.getElementById('timezonePickerContainer');
-    this.elements.settingsView = document.getElementById('settingsView');
+    this.elements = {
+        body: document.body,
+        statusText: document.getElementById('statusText'),
+        currentTime: document.getElementById('currentTime'),
+        currentTimezoneDisplay: document.getElementById('currentTimezoneDisplay'),
+        currentTimezoneValue: document.getElementById('currentTimezoneValue'),
+        timezonePickerContainer: document.getElementById('timezonePickerContainer'),
+        disableBtn: document.getElementById('disableBtn'),
+        settingsBtn: document.getElementById('settingsBtn'),
+    };
   }
 
   async loadInitialData() {
     this.tab = await TabUtils.getCurrentTab();
-    if (!this.tab) return;
-
-    this.siteTimezone = await Storage.get(this.tab.url);
-
-    if (this.siteTimezone) {
-      this.state.setSelectedTimezone(this.siteTimezone);
-      this.elements.enableToggle.checked = true;
+    if (!this.tab) {
+        this.siteTimezone = null;
     } else {
-      this.state.setSelectedTimezone('UTC');
-      this.elements.enableToggle.checked = false;
+        this.siteTimezone = await Storage.get(this.tab.url);
     }
-    this.updateCurrentTimezoneDisplay();
+    this.state.setSelectedTimezone(this.siteTimezone);
   }
 
-  async updateCurrentTimezoneDisplay() {
-    this.elements.currentTimezoneDisplay.textContent = this.siteTimezone || 'Not Set';
+  updateUI() {
+    const isActive = !!this.siteTimezone;
+
+    this.elements.body.classList.toggle('active', isActive);
+
+    if (isActive) {
+        this.elements.statusText.textContent = 'Timezone override is active';
+    } else {
+        this.elements.statusText.textContent = 'Using system timezone';
+    }
+
+    this.elements.currentTimezoneValue.textContent = this.siteTimezone || 'Not Set';
+    this.elements.disableBtn.style.display = isActive ? 'inline-flex' : 'none';
+
+    this.elements.timezonePickerContainer.style.display = this.isPickerVisible ? 'block' : 'none';
+    this.elements.currentTimezoneDisplay.classList.toggle('picker-active', this.isPickerVisible);
+
+    this.updateClock();
+  }
+
+  updateClock() {
+    if (this.clockInterval) {
+      clearInterval(this.clockInterval);
+    }
+
+    const timezoneToDisplay = this.siteTimezone || this.localTimezone;
+
+    const update = () => {
+      try {
+        this.elements.currentTime.textContent = new Date().toLocaleTimeString('en-US', {
+            timeZone: timezoneToDisplay,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+      } catch(e) {
+        this.elements.currentTime.textContent = 'Invalid Timezone';
+      }
+    };
+
+    update();
+    this.clockInterval = setInterval(update, 1000);
   }
 
   setupEventListeners() {
-    this.elements.enableToggle.addEventListener('change', async () => {
-      if (!this.elements.enableToggle.checked) {
-        await Storage.remove(this.tab.url);
-        await TabUtils.applyTimezoneToTab(this.tab.id, null);
-        TabUtils.reloadTab(this.tab.id);
-        this.siteTimezone = null;
-        this.updateCurrentTimezoneDisplay();
-      }
+    this.elements.currentTimezoneDisplay.addEventListener('click', () => {
+        if (!this.tab) return;
+        this.isPickerVisible = !this.isPickerVisible;
+        this.updateUI();
     });
 
-    this.elements.saveBtn.addEventListener('click', async () => {
-      if (this.elements.enableToggle.checked) {
-        await Storage.set(this.tab.url, this.state.selectedTimezone);
-        await TabUtils.applyTimezoneToTab(
-          this.tab.id,
-          this.state.selectedTimezone
-        );
+    this.elements.disableBtn.addEventListener('click', async () => {
+        if (!this.tab) return;
+        this.siteTimezone = null;
+        this.state.setSelectedTimezone(null);
+
+        await Storage.remove(this.tab.url);
+        await TabUtils.applyTimezoneToTab(this.tab.id, null);
+        this.updateUI();
         TabUtils.reloadTab(this.tab.id);
-      }
-      window.close();
+        window.close();
     });
 
     this.elements.settingsBtn.addEventListener('click', () => {
@@ -424,11 +448,16 @@ class PopupHandler {
       this.state,
       {
         showOffset: true,
-        emptyMessage: 'Nothing found',
-        onSelect: (timezone) => {
-          this.state.setSelectedTimezone(timezone);
-          this.elements.currentTimezoneDisplay.textContent = timezone;
+        emptyMessage: 'No matching timezones found.',
+        onSelect: async (timezone) => {
+          if (!this.tab) return;
           this.siteTimezone = timezone;
+          this.isPickerVisible = false;
+          await Storage.set(this.tab.url, timezone);
+          await TabUtils.applyTimezoneToTab(this.tab.id, timezone);
+          this.updateUI();
+          TabUtils.reloadTab(this.tab.id);
+          window.close();
         }
       }
     );
@@ -444,10 +473,11 @@ class OptionsHandler {
   }
 
   async initialize() {
-    await this.state.loadFavorites();
     this.loadElements();
     this.setupComponents();
-    this.loadInitialData();
+    // Use a listener on storage changes to re-render automatically
+    chrome.storage.onChanged.addListener(() => this.renderSites());
+    this.renderSites();
   }
 
   loadElements() {
@@ -455,17 +485,9 @@ class OptionsHandler {
     this.elements.sitesList = document.getElementById('sitesList');
   }
 
-  async loadInitialData() {
-    this.renderSites();
-  }
-
   setupComponents() {
-    this.setupSitesSearch();
-  }
-
-  setupSitesSearch() {
     const searchBar = ComponentBuilder.createSearchBar(
-      'Search for a site...',
+      'Search configured sites...',
       (filter) => this.renderSites(filter)
     );
     this.elements.sitesSearchContainer.appendChild(searchBar);
@@ -476,22 +498,24 @@ class OptionsHandler {
     const allData = await Storage.getAll();
     this.sites = {};
     Object.keys(allData).forEach((key) => {
+      // Simple check to filter only for site override settings
       if (key.startsWith('http')) {
         this.sites[key] = allData[key];
       }
     });
 
-    let siteKeys = Object.keys(this.sites);
+    let siteKeys = Object.keys(this.sites).sort();
 
     if (filter) {
+      const lowerFilter = filter.toLowerCase();
       siteKeys = siteKeys.filter((site) =>
-        site.toLowerCase().includes(filter.toLowerCase())
+        site.toLowerCase().includes(lowerFilter)
       );
     }
 
     if (siteKeys.length === 0) {
       this.elements.sitesList.innerHTML =
-        '<div class="empty-list-message">Nothing found</div>';
+        '<div class="empty-list-message">No sites configured.</div>';
       return;
     }
 
@@ -526,26 +550,16 @@ class OptionsHandler {
 
     const timezoneSelect = ComponentBuilder.createTimezoneSelect(timezone, {
       className: 'timezone-select-small',
-      includeNotSet: true,
+      includeNotSet: false,
     });
 
     timezoneSelect.addEventListener('change', async (event) => {
       const newTimezone = event.target.value;
-      if (newTimezone) {
-        await Storage.set(site, newTimezone);
-      } else {
-        await Storage.remove(site);
-      }
-      this.renderSites(); // Re-render to reflect changes
+      await Storage.set(site, newTimezone);
     });
 
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'btn-icon';
-    removeBtn.innerHTML = '&times;'; // A simple 'x' for remove
-    removeBtn.title = 'Remove site setting';
-    removeBtn.addEventListener('click', async () => {
-      await Storage.remove(site);
-      this.renderSites();
+    const removeBtn = ComponentBuilder.createRemoveBtn(async () => {
+        await Storage.remove(site);
     });
 
     actions.appendChild(timezoneSelect);

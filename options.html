@@ -5,22 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TimeTwister Settings</title>
     <link rel="stylesheet" href="common.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <script src="common.js"></script>
   </head>
   <body class="options">
-    <div class="app-header">
-      <h1>TimeTwister Settings</h1>
-    </div>
+    <div class="options-container">
+      <header class="options-header">
+        <h1>TimeTwister Settings</h1>
+      </header>
 
-    <div class="section">
-      <div class="section-header">
-        <h2>Sites with Timezone Override</h2>
-        <p class="section-description">Manage timezone settings for specific websites</p>
-      </div>
-      <div id="sitesSearchContainer"></div>
-      <div id="sitesList" class="list-container"></div>
+      <main class="options-content">
+        <!-- Site Overrides Section -->
+        <div class="card">
+          <div class="section-header">
+            <h2>Sites with Timezone Override</h2>
+            <p class="section-description">
+              Manage timezone settings for specific websites. You can change or remove the override for each site.
+            </p>
+          </div>
+          <div id="sitesSearchContainer"></div>
+          <div id="sitesList" class="list-container">
+            <!-- Site-specific overrides will be rendered here by common.js -->
+          </div>
+        </div>
+      </main>
     </div>
   </body>
 </html>
