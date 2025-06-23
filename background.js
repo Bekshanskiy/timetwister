@@ -10,14 +10,33 @@ const logInfo = (message) => {
   console.log(`TimeTwister: ${message}`);
 };
 
-// Modern badge styling
+// Modern badge styling - clean icon-only approach
 const updateBadge = (tabId, isActive) => {
-  if (isActive) {
-    chrome.action.setBadgeText({ tabId, text: '•' });
-    chrome.action.setBadgeBackgroundColor({ tabId, color: '#3b82f6' });
-  } else {
-    chrome.action.setBadgeText({ tabId, text: '' });
-  }
+  // Always clear badge text - we rely only on icon color for state indication
+  chrome.action.setBadgeText({ tabId, text: '' });
+};
+
+// Icon state management
+const updateIcon = (tabId, isActive) => {
+  const iconPath = isActive ? {
+    "16": "icons/icon-on-16.png",
+    "32": "icons/icon-on-32.png",
+    "48": "icons/icon-on-48.png",
+    "128": "icons/icon-on-128.png"
+  } : {
+    "16": "icons/icon-off-16.png",
+    "32": "icons/icon-off-32.png",
+    "48": "icons/icon-off-48.png",
+    "128": "icons/icon-off-128.png"
+  };
+
+  chrome.action.setIcon({ tabId, path: iconPath });
+};
+
+// Combined update function for both badge and icon
+const updateTabState = (tabId, isActive) => {
+  updateBadge(tabId, isActive);
+  updateIcon(tabId, isActive);
 };
 
 // This function enables or updates the timezone for a tab.
@@ -44,7 +63,7 @@ const enableOrUpdateTimezone = (tabId, timezone) => {
           return;
         }
         // After successfully setting timezone, update the icon with modern styling.
-        updateBadge(tabId, true);
+        updateTabState(tabId, true);
         logInfo(`Timezone ${timezone} applied to tab ${tabId}`);
       });
     });
@@ -55,6 +74,7 @@ const enableOrUpdateTimezone = (tabId, timezone) => {
         logError(`Failed to update timezone for tab ${tabId}`, chrome.runtime.lastError.message);
         return;
       }
+      updateTabState(tabId, true);
       logInfo(`Timezone updated to ${timezone} for tab ${tabId}`);
     });
   }
@@ -72,7 +92,7 @@ const disableTimezone = (tabId) => {
     }
     delete attachedTabs[tabId];
     // After detaching, clear the icon badge with modern styling.
-    updateBadge(tabId, false);
+    updateTabState(tabId, false);
     logInfo(`Timezone override disabled for tab ${tabId}`);
   });
 };
@@ -141,7 +161,31 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 chrome.debugger.onDetach && chrome.debugger.onDetach.addListener((source, reason) => {
   if (source.tabId && attachedTabs[source.tabId]) {
     delete attachedTabs[source.tabId];
-    updateBadge(source.tabId, false);
+    updateTabState(source.tabId, false);
     logInfo(`Debugger detached from tab ${source.tabId}: ${reason}`);
   }
+});
+
+// Initialize extension with default OFF state icons
+chrome.runtime.onStartup.addListener(() => {
+  chrome.action.setIcon({
+    path: {
+      "16": "icons/icon-off-16.png",
+      "32": "icons/icon-off-32.png",
+      "48": "icons/icon-off-48.png",
+      "128": "icons/icon-off-128.png"
+    }
+  });
+});
+
+// Also set default icon when extension is installed/enabled
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.action.setIcon({
+    path: {
+      "16": "icons/icon-off-16.png",
+      "32": "icons/icon-off-32.png",
+      "48": "icons/icon-off-48.png",
+      "128": "icons/icon-off-128.png"
+    }
+  });
 });

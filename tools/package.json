@@ -1,0 +1,12 @@
+{
+  "name": "timetwister-icon-generator",
+  "version": "1.0.0",
+  "description": "Generate PNG icons from SVG for TimeTwister Chrome extension",
+  "main": "generate-icons.js",
+  "scripts": {
+    "generate-icons": "node generate-icons.js"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.0"
+  }
+}

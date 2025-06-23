@@ -13,17 +13,17 @@
     "default_popup": "popup.html",
     "default_title": "TimeTwister - Timezone Control for selected websites",
     "default_icon": {
-      "16": "icons/icon16.png",
-      "32": "icons/icon32.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "16": "icons/icon-off-16.png",
+      "32": "icons/icon-off-32.png",
+      "48": "icons/icon-off-48.png",
+      "128": "icons/icon-off-128.png"
     }
   },
   "options_page": "options.html",
   "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "16": "icons/icon-off-16.png",
+    "32": "icons/icon-off-32.png",
+    "48": "icons/icon-off-48.png",
+    "128": "icons/icon-off-128.png"
   }
 }
