@@ -71,6 +71,7 @@ timetwister/
 ├── pages/
 │   ├── popup.html                 # Main extension popup
 │   └── options.html               # Settings page
+├── ATTRIBUTION.md                 # Third-party asset attributions
 └── README.md                      # This file
 ```
 
@@ -109,6 +110,15 @@ We welcome contributions! Whether it's:
 
 Please feel free to open an issue or submit a pull request.
 
+## Attribution
+
+### Icons
+The clock square icon used in this extension is designed by **[Bharat Design](https://www.iconscout.com/contributors/bharat-icons)** and is used under the Digital License. The original icon can be found at [IconScout](https://iconscout.com/icon/clock-square).
+
+We gratefully acknowledge Bharat Design for creating this beautiful and functional icon design.
+
 ## License
 
 This project is licensed under the MIT License.
+
+**Note**: The icon assets are used under separate licensing terms as described in the Attribution section above.

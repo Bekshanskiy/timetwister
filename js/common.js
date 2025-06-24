@@ -529,7 +529,7 @@ class OptionsHandler {
       });
 
       const manifest = chrome.runtime.getManifest();
-      this.elements.footer.textContent = `TimeTwister v${manifest.version}`;
+      this.elements.footer.innerHTML = `TimeTwister v${manifest.version} by Bekshanskiy`;
   }
 
   setupEventListeners() {

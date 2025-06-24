@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "TimeTwister",
+  "name": "TimeTwister - Timezone Control for Selected Websites",
   "version": "1.0.0",
-  "description": "Timezone override for selected websites",
+  "description": "This FREE extension allows you to change the browser's time zone for selected websites.",
   "author": "Bekshanskiy",
+  "homepage_url": "https://github.com/bekshanskiy/timetwister",
   "permissions": ["storage", "tabs", "debugger", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -11,7 +12,7 @@
   },
   "action": {
     "default_popup": "pages/popup.html",
-    "default_title": "TimeTwister - Timezone Control for selected websites",
+    "default_title": "TimeTwister - Timezone Control for Selected Websites",
     "default_icon": {
       "16": "icons/icon-16_blue.png",
       "32": "icons/icon-32_blue.png",
@@ -25,5 +26,8 @@
     "32": "icons/icon-32_blue.png",
     "48": "icons/icon-48_blue.png",
     "128": "icons/icon-128_blue.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
   }
 }
