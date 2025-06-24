@@ -5,6 +5,7 @@
   "description": "This FREE extension allows you to change the browser's time zone for selected websites.",
   "author": "Bekshanskiy",
   "homepage_url": "https://github.com/bekshanskiy/timetwister",
+  "privacy_policy": "https://bekshanskiy.github.io/timetwister/privacy-policy.html",
   "permissions": ["storage", "tabs", "debugger", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {

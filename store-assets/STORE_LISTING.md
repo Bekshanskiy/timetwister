@@ -78,10 +78,10 @@ Your preferences are automatically saved and the timezone will be applied on eve
 English
 
 ## Privacy Policy URL
-[You'll need to host your privacy policy online and provide the URL]
+https://bekshanskiy.github.io/timetwister/privacy-policy.html
 
 ## Support URL
-[Your support email or GitHub issues URL]
+https://github.com/bekshanskiy/timetwister/issues
 
 ## Screenshots Needed
 1. Main popup showing timezone selection
