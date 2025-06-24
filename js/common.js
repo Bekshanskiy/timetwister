@@ -637,7 +637,7 @@ class OptionsHandler {
     });
 
     actions.appendChild(timezoneSelect);
-    actions.appendChild(removeBtn); 
+    actions.appendChild(removeBtn);
     mainContent.appendChild(actions);
     row.appendChild(mainContent);
     return row;

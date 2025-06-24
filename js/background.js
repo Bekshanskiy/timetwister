@@ -16,21 +16,88 @@ const updateBadge = (tabId, isActive) => {
   chrome.action.setBadgeText({ tabId, text: '' });
 };
 
-// Icon state management
+// Icon state management - Automatic theme detection like Apple apps
 const updateIcon = (tabId, isActive) => {
-  const iconPath = isActive ? {
-    "16": "icons/icon-on-16.png",
-    "32": "icons/icon-on-32.png",
-    "48": "icons/icon-on-48.png",
-    "128": "icons/icon-on-128.png"
-  } : {
-    "16": "icons/icon-off-16.png",
-    "32": "icons/icon-off-32.png",
-    "48": "icons/icon-off-48.png",
-    "128": "icons/icon-off-128.png"
+  // Always update icon with current theme
+  updateIconForCurrentTheme(tabId);
+};
+
+// Automatic theme detection and icon updating
+const updateIconForCurrentTheme = (tabId = null) => {
+  const lightIcons = {
+    "16": "/icons/icon-16_black.png",
+    "32": "/icons/icon-32_black.png",
+    "48": "/icons/icon-48_blue.png",
+    "128": "/icons/icon-128_blue.png"
   };
 
-  chrome.action.setIcon({ tabId, path: iconPath });
+  const darkIcons = {
+    "16": "/icons/icon-16_white.png",
+    "32": "/icons/icon-32_white.png",
+    "48": "/icons/icon-48_blue.png",
+    "128": "/icons/icon-128_blue.png"
+  };
+
+  // Inject a content script to detect the actual theme
+  const detectThemeScript = `
+    (() => {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      chrome.runtime.sendMessage({type: 'themeDetected', isDark: isDark});
+    })();
+  `;
+
+  // Try to inject into an active tab to detect theme
+  chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+    if (tabs[0] && tabs[0].url && !tabs[0].url.startsWith('chrome://')) {
+      chrome.scripting.executeScript({
+        target: {tabId: tabs[0].id},
+        func: () => {
+          const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          chrome.runtime.sendMessage({type: 'themeDetected', isDark: isDark});
+        }
+      }).catch(() => {
+        // Fallback if script injection fails, use last known theme
+        chrome.storage.local.get('isDarkTheme', ({ isDarkTheme }) => {
+          setIconTheme(tabId, !!isDarkTheme);
+        });
+      });
+    } else {
+      // Fallback for chrome:// pages, use last known theme
+      chrome.storage.local.get('isDarkTheme', ({ isDarkTheme }) => {
+        setIconTheme(tabId, !!isDarkTheme);
+      });
+    }
+  });
+};
+
+// Set icon based on theme
+const setIconTheme = (tabId, isDark) => {
+  const lightIcons = {
+    "16": "/icons/icon-16_black.png",
+    "32": "/icons/icon-32_black.png",
+    "48": "/icons/icon-48_blue.png",
+    "128": "/icons/icon-128_blue.png"
+  };
+
+  const darkIcons = {
+    "16": "/icons/icon-16_white.png",
+    "32": "/icons/icon-32_white.png",
+    "48": "/icons/icon-48_blue.png",
+    "128": "/icons/icon-128_blue.png"
+  };
+
+  const iconSet = isDark ? darkIcons : lightIcons;
+
+  if (tabId) {
+    chrome.action.setIcon({ tabId, path: iconSet });
+  } else {
+    chrome.action.setIcon({ path: iconSet });
+  }
+
+  // Store the detected theme for fallback on restricted pages
+  chrome.storage.local.set({ isDarkTheme: isDark });
+
+  console.log(`Icon updated - dark mode: ${isDark}`);
 };
 
 // Combined update function for both badge and icon
@@ -97,7 +164,7 @@ const disableTimezone = (tabId) => {
   });
 };
 
-// Enhanced message handling with better error responses
+// Enhanced message handling with theme detection and better error responses
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'applyTimezone') {
     try {
@@ -111,6 +178,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       logError('Failed to apply timezone', error);
       sendResponse({ success: false, error: error.message });
     }
+  } else if (request.type === 'themeDetected') {
+    // Handle theme detection from content scripts
+    setIconTheme(sender.tab?.id, request.isDark);
+    sendResponse({ success: true });
   }
   return true;
 });
@@ -166,26 +237,32 @@ chrome.debugger.onDetach && chrome.debugger.onDetach.addListener((source, reason
   }
 });
 
-// Initialize extension with default OFF state icons
+// Automatic theme detection and initialization - like Apple apps
+const initializeAutoTheme = () => {
+  // Detect theme automatically on startup
+  updateIconForCurrentTheme();
+  console.log('Auto theme detection initialized');
+};
+
+// Initialize extension with automatic theme detection
 chrome.runtime.onStartup.addListener(() => {
-  chrome.action.setIcon({
-    path: {
-      "16": "icons/icon-off-16.png",
-      "32": "icons/icon-off-32.png",
-      "48": "icons/icon-off-48.png",
-      "128": "icons/icon-off-128.png"
-    }
-  });
+  console.log('Extension started - auto-detecting theme');
+  initializeAutoTheme();
 });
 
-// Also set default icon when extension is installed/enabled
+// Set automatic theme detection when extension is installed/enabled
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.action.setIcon({
-    path: {
-      "16": "icons/icon-off-16.png",
-      "32": "icons/icon-off-32.png",
-      "48": "icons/icon-off-48.png",
-      "128": "icons/icon-off-128.png"
-    }
-  });
+  console.log('Extension installed - auto-detecting theme');
+  initializeAutoTheme();
+});
+
+// Auto-update icons when tab becomes active (re-detect theme)
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  updateIconForCurrentTheme(activeInfo.tabId);
+});
+
+// Auto-update icons when window focus changes (theme might have changed)
+chrome.windows.onFocusChanged.addListener(() => {
+  if (chrome.windows.WINDOW_ID_NONE) return;
+  updateIconForCurrentTheme();
 });
